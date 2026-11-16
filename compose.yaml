@@ -1,0 +1,39 @@
+services:
+  app:
+    image: ${APP_IMAGE}
+    ports: ["80:8000"]
+    environment:
+      PUERTO: ${PUERTO}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      MENSAJE: ${MENSAJE}
+      DIRECTORIO_LOGS: /var/log/contador
+    networks: [red_app]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    volumes: [logs:/var/log/contador]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits: { memory: 256M, cpus: "0.5", pids: 100 }
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [datos:/data]
+    networks: [red_app]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+networks:
+  red_app: {}
+volumes:
+  logs: {}
+  datos: {}
